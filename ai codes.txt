@@ -1,0 +1,762 @@
+1.	DFS AND BFS
+#include<iostream>
+#include<map>   
+#include<list>
+#include<queue>
+
+using namespace std;
+
+/* Implement depth first search algorithm and Breadth First Search algorithm, Use an undirected graph and develop a recursive algorithm for searching all the vertices of a graph or tree data structure.
+*/
+
+template <typename T>
+class Graph{
+    // Adjacency List
+    map<T, list<T>> adjList;
+
+    public:
+        // Add Edge
+        void addEdge(T src, T dest){
+            adjList[src].push_back(dest);
+            adjList[dest].push_back(src);
+        }
+
+        void bfs(queue<T>& q, map<T, bool>& visited){
+            if(q.empty()) return;
+            T node = q.front();
+            q.pop();
+            cout << node << " ";
+            for(T n : adjList[node]){
+                if(!visited[n]){
+                    q.push(n);
+                    visited[n] = true;
+                }
+            }
+
+            bfs(q, visited);
+        }
+
+        void dfs(T v, map<T, bool>& visited){
+            visited[v] = true;
+            cout << v << " ";
+            for(T n: adjList[v]){
+                if(!visited[n]){
+                    dfs(n, visited);
+                }
+            }
+        }
+};
+
+
+int main(){
+    Graph<int> g;
+    g.addEdge(0, 1);
+    g.addEdge(0, 3);
+    g.addEdge(1, 2);
+    g.addEdge(3, 4);
+    g.addEdge(4, 5);
+    queue<int> q;
+    map<int, bool> visited;
+    
+    int ch;
+    cout << "Enter 1 for BFS, 2 for DFS:";
+    cin >> ch;
+
+    for(int i = 0; i < 6; i++){
+        visited[i] = false;
+    }
+    
+    if(ch == 1){
+        for(int i = 0; i < 6; i++){
+            if(!visited[i]){
+                visited[i] = true;
+                q.push(i);
+                g.bfs(q, visited);
+            }
+        }
+    cout << '\n';
+    }
+    else{
+        for(int i = 0; i < 6; i++){
+            if(!visited[i]){
+                g.dfs(i, visited);
+            }
+        }
+    }
+    return 0;
+}
+
+/*
+OUTPUT
+Enter 1 for BFS, 2 for DFS:1
+0 1 3 2 4 5 
+
+Enter 1 for BFS, 2 for DFS:2
+0 1 2 3 4 5
+
+*/
+
+
+
+
+
+
+2. A STAR FOR 8 Puzzle
+#include<iostream>
+#include<cmath>
+#include<limits.h>
+
+using namespace std;
+
+//A* alogrithm to solve 8 puzzle problem
+//Global variable to keep track of number of moves taken
+
+int g = 0;
+
+void Print(int puzzle[]){
+    for(int i = 0; i < 9; i++){
+        if(i % 3 == 0) cout << '\n';
+        if(puzzle[i] == -1) cout << "_ ";
+        else cout << puzzle[i] << " ";
+    }
+    cout << "\n\n";
+}
+
+void moveLeft(int start[], int position){
+    swap(start[position], start[position - 1]);
+}
+
+void moveRight(int start[], int position){
+    swap(start[position], start[position + 1]);
+}
+
+void moveUp(int start[], int position){
+    swap(start[position], start[position - 3]);
+}
+
+void moveDown(int start[], int position){
+    swap(start[position], start[position + 3]);
+}
+
+void Copy(int temp[], int real[]){
+    for(int i = 0; i < 9; i++) temp[i] = real[i];
+}
+
+/*
+For every number find difference in position in goal state and inital state
+Difference in vertical + difference in horizontal i.e Manhattan Distance
+*/
+int heuristic(int start[], int goal[]){
+    int h = 0;    
+    for(int i = 0; i < 9; i++){
+        for(int j = 0; j < 9; j++){
+            if (start[i] == goal[j] && start[i] != -1){
+                h += abs((j - i) / 3) + abs((j - i) % 3);
+            }
+        }
+    }
+    return h + g;
+}
+
+void moveTile(int start[], int goal[]){
+    int emptyAt = 0;
+    for(int i = 0; i < 9; i++){
+        if(start[i] == -1){
+            emptyAt = i;
+            break;
+        }
+    }
+
+    int t1[9],t2[9],t3[9],t4[9],f1 = INT_MAX,f2 = INT_MAX,f3 = INT_MAX,f4 = INT_MAX;
+    Copy(t1, start);
+    Copy(t2, start);
+    Copy(t3, start);
+    Copy(t4, start);
+
+    int row = emptyAt / 3;
+    int col = emptyAt % 3;
+
+    if(col - 1 >= 0){
+        moveLeft(t1, emptyAt);
+        f1 = heuristic(t1, goal);
+    }
+    
+    if(col + 1 < 3){
+        moveRight(t2, emptyAt);
+        f2 = heuristic(t2, goal);
+    }
+
+    if(row + 1 < 3){
+        moveDown(t3, emptyAt);
+        f3 = heuristic(t3, goal);
+    }
+    
+    if(row - 1 >= 0){
+        moveUp(t4, emptyAt);
+        f4 = heuristic(t4, goal);
+    }
+    
+    
+    //Find Least Heuristic State and Make the Move
+    if(f1 <= f2 && f1 <= f3 && f1 <= f4 ){
+        moveLeft(start, emptyAt);
+    }
+    else if(f2 <= f1 && f2 <= f3 && f2 <= f4 ){
+        moveRight(start, emptyAt);
+    }
+    else if(f3 <= f1 && f3 <= f2 && f3 <= f4 ){
+        moveDown(start, emptyAt);
+    }
+    else{
+        moveUp(start, emptyAt);
+    }
+}
+
+void solveEight(int start[], int goal[]){
+    g++;
+    //Move Tile
+    moveTile(start, goal);
+    Print(start);
+    //Get Heuristic Value
+    int f = heuristic(start, goal);
+    if(f == g){
+        cout << "Solved in " << f << " moves\n";
+        return;
+    }
+    solveEight(start, goal);
+}
+// Count the number of inversion, if odd then unsolvable, else solvable
+
+bool solvable(int start[]){
+    int invrs = 0;
+    for(int i = 0; i < 9; i++){
+        //1 2 3 -1 4 6 7 5 8
+
+        if(start[i] <= 1) continue;
+        for(int j = i + 1; j < 9; j++){
+            if(start[j] == -1) continue;
+            if(start[i] > start[j]) invrs++;
+        }
+    }
+    return invrs & 1 ? false : true;
+}
+
+printImpossible(){
+    cout << “IMPOSSIBLE TO SOLVE” << '\n';
+}
+
+int main(){
+    int start[9];
+    int goal[9];
+    cout << "Enter the start state:(Enter -1 for empty):";
+    for(int i = 0; i < 9; i++){
+        cin >> start[i];
+    }
+    cout << "Enter the goal state:(Enter -1 for empty):";
+    for(int i = 0; i < 9; i++){
+        cin >> goal[i];
+    }	
+    // verify if possible to solve
+    Print(start);
+    if(solvable(start)) solveEight(start, goal);
+    else printImpossible();
+
+    return 0;
+}
+/*
+
+OUTPUT
+
+Enter the start state:(Enter -1 for empty):1 2 3 4 8 -1 7 6 5
+Enter the goal state:(Enter -1 for empty):1 2 3 4 5 6 7 8 -1
+
+1 2 3
+4 8 _
+7 6 5
+
+1 2 3
+4 8 5
+7 6 _
+
+1 2 3
+4 8 5
+7 _ 6
+
+1 2 3
+4 _ 5
+7 8 6
+
+1 2 3
+4 5 _
+7 8 6
+
+1 2 3
+4 5 6
+7 8 _
+
+Solved in 5 moves
+
+*/
+
+3. Selection Sort
+def selectionSort(arr):
+    for i in range(len(arr)):
+        min = float('-inf')
+        for j in range(i + 1, len(arr)):
+            if arr[i] > arr[j]:
+                arr[i],arr[j] = arr[j], arr[i]
+    return arr
+    
+print(selectionSort([89,56,45,34,65,76]))
+/*
+OUTPUT:
+[34, 45, 56, 65, 76, 89]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4. N-Queen Problem using branch and bound
+/* C++ program to solve N Queen Problem using Branch and Bound */
+#include <iostream>
+#include <string.h>
+using namespace std;
+#define N 8
+
+void printSolution(int board[N][N])
+{
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = 0; j < N; j++)
+			cout << " "<< board[i][j];
+		cout << "\n";
+	}
+}
+
+/* Check if a queen can be placed on board[row][col] */
+bool isSafe(int row, int col, int slashCode[N][N], int backslashCode[N][N], bool rowLookup[], bool slashCodeLookup[], bool backslashCodeLookup[] )
+{
+	if (slashCodeLookup[slashCode[row][col]] || backslashCodeLookup[backslashCode[row][col]] ||rowLookup[row]) return false;
+
+	return true;
+}
+
+/* A recursive utility function to solve N Queen problem */
+bool solveNQueensUtil(int board[N][N], int col, int slashCode[N][N], int backslashCode[N][N], bool rowLookup[N], bool slashCodeLookup[], bool backslashCodeLookup[])
+{
+	/* base case: If all queens are placed
+	then return true */
+	if (col >= N)
+		return true;
+
+	/* Consider this column and try placing
+	this queen in all rows one by one */
+	for (int i = 0; i < N; i++)
+	{
+		/* Check if queen can be placed on board[i][col] */
+		if (isSafe(i, col, slashCode, backslashCode, rowLookup, slashCodeLookup, backslashCodeLookup) )
+		{
+			/* Place this queen in board[i][col] */
+			board[i][col] = 1;
+			rowLookup[i] = true;
+			slashCodeLookup[slashCode[i][col]] = true;
+			backslashCodeLookup[backslashCode[i][col]] = true;
+
+			/* recur to place rest of the queens */
+			if (solveNQueensUtil(board, col + 1, slashCode, backslashCode, rowLookup, slashCodeLookup, backslashCodeLookup) ) return true;
+
+			/* If placing queen in board[i][col]
+			doesn't lead to a solution, then backtrack */
+
+			/* Remove queen from board[i][col] */
+			board[i][col] = 0;
+			rowLookup[i] = false;
+			slashCodeLookup[slashCode[i][col]] = false;
+			backslashCodeLookup[backslashCode[i][col]] = false;
+		}
+	}
+
+	/* If queen can not be place in any row in this column col then return false */
+	return false;
+}
+
+bool solveNQueens()
+{
+	int board[N][N];
+	memset(board, 0, sizeof board);
+
+	// helper matrices
+	int slashCode[N][N];
+	int backslashCode[N][N];
+
+	// arrays to tell us which rows are occupied
+	bool rowLookup[N] = {false};
+
+	//keep two arrays to tell us which diagonals are occupied
+	bool slashCodeLookup[2*N - 1] = {false};
+	bool backslashCodeLookup[2*N - 1] = {false};
+
+	// initialize helper matrices
+	for (int r = 0; r < N; r++)
+		for (int c = 0; c < N; c++) {
+			slashCode[r] = r + c,
+			backslashCode[r] = r - c + 7;
+		}
+
+	if (solveNQueensUtil(board, 0,slashCode, backslashCode, rowLookup, slashCodeLookup, backslashCodeLookup) == false )
+	{
+		cout << "Solution does not exist";
+		return false;
+	}
+
+	// solution found
+	printSolution(board);
+	return true;
+}
+
+int main()
+{
+	solveNQueens();
+	return 0;
+}
+/*
+
+
+OUTPUT:
+ 1  0  0  0  0  0  0  0 
+ 0  0  0  0  0  0  1  0 
+ 0  0  0  0  1  0  0  0 
+ 0  0  0  0  0  0  0  1 
+ 0  1  0  0  0  0  0  0 
+ 0  0  0  1  0  0  0  0 
+ 0  0  0  0  0  1  0  0 
+0	0  1  0  0  0  0  0
+   */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+5. Chatbot
+import io
+import random
+import string
+import warnings
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import warnings
+warnings.filterwarnings('ignore')
+import nltk
+from nltk.stem import WordNetLemmatizer
+from google.colab import files
+
+nltk.download('popular', quiet=True)
+nltk.download('punkt')
+nltk.download('wordnet')
+
+try:
+  with open('chatbot.txt','r', encoding='utf8', errors ='ignore') as fin:
+    raw = fin.read().lower()
+except FileNotFoundError:
+  print('Upload chatbot.txt')
+  uploaded = files.upload()
+  with open('chatbot.txt', 'r', encoding='utf8', errors ='ignore') as fin:
+    raw = fin.read().lower()
+
+#Tokenisation
+sent_tokens = nltk.sent_tokenize(raw)
+word_tokens = nltk.word_tokenize(raw)
+
+# Preprocessing
+lemmer = WordNetLemmatizer()
+def LemTokens(tokens):
+    return [lemmer.lemmatize(token) for token in tokens]
+remove_punct_dict = dict((ord(punct), None) for punct in string.punctuation)
+def LemNormalize(text):
+    return LemTokens(nltk.word_tokenize(text.lower().translate(remove_punct_dict)))
+
+
+# Keyword Matching
+GREETING_INPUTS = ("hello", "hi", "greetings", "sup", "what's up","hey","Helo")
+GREETING_RESPONSES = ["hi", "hey", "hi there", "hello", "I am glad! You are talking to me"]
+
+def greeting(sentence):
+  for word in sentence.split():
+    if word.lower() in GREETING_INPUTS:
+        return random.choice(GREETING_RESPONSES)
+
+def response(user_response):
+  robo_response=''
+  sent_tokens.append(user_response)
+  TfidfVec = TfidfVectorizer(tokenizer=LemNormalize, stop_words='english')
+  tfidf = TfidfVec.fit_transform(sent_tokens)
+  vals = cosine_similarity(tfidf[-1], tfidf)
+  idx=vals.argsort()[0][-2]
+  flat = vals.flatten()
+  flat.sort()
+  req_tfidf = flat[-2]
+  if(req_tfidf==0):
+    robo_response=robo_response+"I am sorry! I don't understand you"
+    return robo_response
+  else:
+    robo_response = robo_response+sent_tokens[idx]
+    return robo_response
+
+flag=True
+print("ROBO: My name is Robo. I will answer your queries about Investments. If you want to exit, type Bye!")
+while(flag==True):
+  user_response = input()
+  user_response=user_response.lower()
+  if(user_response!='bye'):
+    if(user_response=='thanks' or user_response=='thank you' ):
+      flag=False
+      print("ROBO: You are welcome..")
+    else:
+      if(greeting(user_response)!=None):
+          print("ROBO: "+greeting(user_response))
+      else:
+        print("ROBO: ",end="")
+        res = response(user_response)
+        nlines = res.count('\n')
+        if nlines > 0:
+          res = res.split("\n",1)[1]
+        print(res)
+        sent_tokens.remove(user_response)
+  else:
+    flag=False
+    print("ROBO: Bye! take care..")
+
+/*
+
+OUTPUT: 
+ROBO: My name is Robo. I will answer your queries about Investments. If you want to exit, type Bye!
+Hi
+ROBO: hi there
+Bye
+ROBO: Bye! take care..
+
+*/
+
+
+
+
+
+
+6. Expert System
+> Main.py
+
+from greetings import Greetings
+diseases_list = []
+diseases_symptoms = []
+symptom_map = {}
+d_desc_map = {}
+
+
+# loads the knowledge from .txt files into variables to allow the code to use it
+def preprocess():
+	# global diseases_list, diseases_symptoms, symptom_map, d_desc_map, d_treatment_map
+	diseases = open("./diseases.txt")
+	diseases_t = diseases.read()
+	_diseases_list = diseases_t.split("\n")
+	diseases.close()
+
+	for disease in _diseases_list:
+		if len(disease):
+			disease_s_file = open("Symptoms/" + disease + ".txt")
+			disease_s_data = disease_s_file.read()
+			s_list = disease_s_data.split("\n")
+			diseases_symptoms.append([x for x in s_list if len(x) > 0])
+			symptom_map[str(s_list)] = disease
+			disease_s_file.close()
+
+			disease_s_file = open("Descriptions/" + disease + ".txt")
+			disease_s_data = disease_s_file.read()
+			d_desc_map[disease] = disease_s_data
+			disease_s_file.close()
+
+
+def identify_disease(*arguments):
+	symptom_list = []
+	for symptom in arguments:
+		symptom_list.append(symptom)
+
+	return symptom_map[str(symptom_list)]
+
+
+def get_details(disease):
+	return d_desc_map[disease]
+
+
+def if_not_matched(disease):
+	print("")
+	id_disease = disease
+	disease_details = get_details(id_disease)
+	print("")
+	print("The most probable disease that you have is %s\n" % id_disease)
+	print("A short description of the disease is given below :\n")
+	print(disease_details + "\n")
+
+# driver function
+if __name__ == "__main__":
+	preprocess()
+	# creating class object
+	engine = Greetings(symptom_map, if_not_matched, get_details)
+	# loop to keep running the code until user says no when asked for another diagnosis
+	while 1:
+		engine.reset()
+		engine.run()
+		print("Would you like to diagnose some other symptoms?\n Reply yes or no")
+		if input() == "no":
+			exit()
+
+> greetings.py
+from experta import *
+
+
+class Greetings(KnowledgeEngine):
+	def __init__(self, symptom_map, if_not_matched, get_details):
+		self.symptom_map = symptom_map
+		self.if_not_matched = if_not_matched
+		self.get_details = get_details
+		KnowledgeEngine.__init__(self)
+
+	# code giving instructions on how to use the Expert System
+	@DefFacts()
+	def _initial_action(self):
+		print("")
+		print("This is a knowledge based bot to diagnose diseases")
+		print("")
+		print("Do you feel any of the following symptoms?")
+		print("Reply high or low or no")
+		print("")
+		yield Fact(action="find_disease")
+
+	@Rule(Fact(action="find_disease"), NOT(Fact(fatigue=W())), salience=1)
+	def symptom_0(self):
+		self.declare(Fact(fatigue=input("fatigue: ")))
+
+	@Rule(Fact(action="find_disease"), NOT(Fact(low_body_temp=W())), salience=1)
+	def symptom_1(self):
+		self.declare(Fact(low_body_temp=input("low body temperature: ")))
+
+	@Rule(Fact(action="find_disease"), NOT(Fact(restlessness=W())), salience=1)
+	def symptom_2(self):
+		self.declare(Fact(restlessness=input("restlessness: ")))
+
+	@Rule(Fact(action="find_disease"), NOT(Fact(sore_throat=W())), salience=1)
+	def symptom_3(self):
+		self.declare(Fact(sore_throat=input("sore throat: ")))
+
+	@Rule(
+		Fact(sore_throat="no"),
+		Fact(fatigue="high"),
+		Fact(restlessness="no"),
+		Fact(low_body_temp="no"),
+	)
+	def disease_0(self):
+		self.declare(Fact(disease="Jaundice"))
+
+	@Rule(
+		Fact(sore_throat="no"),
+		Fact(fatigue="no"),
+		Fact(restlessness="low"),
+		Fact(low_body_temp="no"),
+	)
+	def disease_1(self):
+		self.declare(Fact(disease="Asthma"))
+
+	@Rule(
+		Fact(sore_throat="no"),
+		Fact(fatigue="no"),
+		Fact(restlessness="no"),
+		Fact(low_body_temp="high"),
+	)
+	def disease_2(self):
+		self.declare(Fact(disease="Hypothermia"))
+
+	@Rule(
+		Fact(sore_throat="high"),
+		Fact(fatigue="high"),
+		Fact(restlessness="no"),
+		Fact(low_body_temp="no"),
+	)
+	def disease_3(self):
+		self.declare(Fact(disease="Coronavirus"))
+
+	# Disease Matched
+	@Rule(Fact(action="find_disease"), Fact(disease=MATCH.disease), salience=-998)
+	def disease(self, disease):
+		print("")
+		id_disease = disease
+		disease_details = self.get_details(id_disease)
+		print("")
+		print("Your symptoms match %s\n" % id_disease)
+		print("A short description of the disease is given below :\n")
+		print(disease_details + "\n")
+
+	# Disease Not Matched
+	@Rule(
+		Fact(sore_throat=MATCH.sore_throat),
+		Fact(fatigue=MATCH.fatigue),
+		Fact(low_body_temp=MATCH.low_body_temp),
+		Fact(restlessness=MATCH.restlessness),
+	)
+	def not_matched(self):
+		print("\nThe bot did not find any diseases that match your exact symptoms.")
+
+/*
+
+OUTPUT:
+This is a knowledge based bot to diagnose diseases
+
+Do you feel any of the following symptoms?
+Reply high or low or no
+
+sore throat: no
+restlessness: no
+fatigue: low
+low body temperature: no
+
+The bot did not find any diseases that match your exact symptoms.
+Would you like to diagnose some other symptoms?
+ Reply yes or no
+No
+
+
+*/
